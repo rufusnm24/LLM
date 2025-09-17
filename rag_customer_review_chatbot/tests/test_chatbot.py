@@ -4,10 +4,12 @@ from typing import List
 import pandas as pd
 import pytest
 
+from rag_customer_review_chatbot.src.app import chatbot as chatbot_module
 from rag_customer_review_chatbot.src.app.chatbot import (
     ReviewChatbot,
     build_chatbot_from_config,
     configure_from_args,
+    load_config,
 )
 from rag_customer_review_chatbot.src.ingestion.loader import ReviewDocument
 from rag_customer_review_chatbot.src.retriever.vectorstore import create_vector_store
@@ -98,3 +100,27 @@ def test_build_chatbot_from_config_with_real_data(tmp_path):
     answer = chatbot.answer("What about the battery life?")
     assert "Question:" in answer
     assert "Supporting reviews:" in answer
+
+
+def test_load_config_without_yaml_dependency(monkeypatch, tmp_path):
+    def _raise_module_not_found(name: str):
+        raise ModuleNotFoundError
+
+    monkeypatch.setattr(chatbot_module, "import_module", _raise_module_not_found)
+
+    config_text = """
+paths:
+  data_path: data/sample_reviews.csv
+retriever:
+  top_k: 4
+  vectorizer:
+    min_df: 1
+    ngram_range: [1, 1]
+"""
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(config_text, encoding="utf-8")
+
+    loaded = load_config(cfg_path)
+
+    assert loaded["retriever"]["top_k"] == 4
+    assert loaded["retriever"]["vectorizer"]["ngram_range"] == [1, 1]

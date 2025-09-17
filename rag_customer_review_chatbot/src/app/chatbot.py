@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import copy
 import logging
 import statistics
+from importlib import import_module
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, MutableMapping, Optional, Sequence
-
-import yaml
 
 from rag_customer_review_chatbot.src.ingestion.loader import (
     build_documents_from_csv,
@@ -36,7 +36,9 @@ def load_config(config_path: Optional[str | Path] = None) -> ConfigDict:
         raise FileNotFoundError(f"Configuration file not found: {path}")
 
     with path.open("r", encoding="utf-8") as handle:
-        config = yaml.safe_load(handle) or {}
+        raw_text = handle.read()
+
+    config = _load_yaml_text(raw_text)
 
     if not isinstance(config, dict):
         raise ValueError("Configuration file must define a YAML mapping.")
@@ -364,6 +366,96 @@ def _coerce_optional_str(value: Any) -> Optional[str]:
         return None
     result = str(value).strip()
     return result or None
+
+
+def _load_yaml_text(text: str) -> Any:
+    """Parse YAML using PyYAML if available, otherwise use a minimal parser."""
+
+    yaml_module = _try_import_yaml()
+    if yaml_module is not None:
+        loaded = yaml_module.safe_load(text) or {}
+        return loaded
+
+    return _parse_simple_yaml(text)
+
+
+def _try_import_yaml():
+    """Attempt to import :mod:`yaml`, returning ``None`` if unavailable."""
+
+    try:
+        return import_module("yaml")
+    except ModuleNotFoundError:
+        return None
+
+
+def _parse_simple_yaml(text: str) -> Any:
+    """Parse a limited subset of YAML used by the default configuration.
+
+    The fallback parser supports nested mappings with two-space indentation and
+    scalar values such as integers, floats, booleans, strings, and inline lists.
+    It intentionally rejects unsupported constructs (e.g. multi-line strings,
+    anchors) to fail fast if a more complex configuration is provided.
+    """
+
+    root: Dict[str, Any] = {}
+    stack: List[tuple[int, Dict[str, Any]]] = [(-1, root)]
+
+    for raw_line in text.splitlines():
+        line = raw_line.split("#", 1)[0].rstrip()
+        if not line.strip():
+            continue
+
+        indent = len(line) - len(line.lstrip(" "))
+        if indent % 2 != 0:
+            raise ValueError("Configuration indentation must use multiples of two spaces.")
+
+        stripped = line.strip()
+        if stripped.startswith("-"):
+            raise ValueError("List syntax with '-' is not supported by the fallback YAML parser.")
+
+        key, sep, value_part = stripped.partition(":")
+        if not sep:
+            raise ValueError(f"Invalid configuration line: {raw_line}")
+
+        key = key.strip()
+        value_text = value_part.strip()
+
+        while stack and indent <= stack[-1][0]:
+            stack.pop()
+        if not stack:
+            raise ValueError(f"Invalid indentation in configuration near: {raw_line}")
+
+        parent = stack[-1][1]
+        if value_text == "":
+            child: Dict[str, Any] = {}
+            parent[key] = child
+            stack.append((indent, child))
+        else:
+            parent[key] = _parse_scalar(value_text)
+
+    return root
+
+
+def _parse_scalar(value_text: str) -> Any:
+    lowered = value_text.lower()
+    if lowered in {"true", "false"}:
+        return lowered == "true"
+    if lowered in {"null", "none"}:
+        return None
+
+    try:
+        return ast.literal_eval(value_text)
+    except (ValueError, SyntaxError):
+        pass
+
+    # Attempt to coerce numeric strings that literal_eval could not parse due
+    # to missing decimal points or other formatting nuances.
+    try:
+        if "." in value_text:
+            return float(value_text)
+        return int(value_text)
+    except ValueError:
+        return value_text
 
 
 if __name__ == "__main__":  # pragma: no cover
