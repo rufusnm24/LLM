@@ -1,0 +1,6 @@
+review_id,product_id,review_text,rating,review_date
+1,A100,"The vacuum cleaner is lightweight and powerful. It picked up pet hair easily and the battery lasts a full apartment cleaning.",5,2023-01-14
+2,A100,"Suction is fine but the dust bin is small and needs to be emptied frequently. Overall decent but not amazing.",3,2023-01-22
+3,B200,"Coffee maker brews quickly, but the water reservoir started leaking after two weeks. Customer service replaced it though.",2,2023-02-05
+4,B200,"Love the timer feature and the coffee tastes great. Wish it came with a reusable filter but paper filters work.",4,2023-02-18
+5,C300,"Headphones have balanced sound and comfortable ear cushions. Noise cancellation is average for the price.",4,2023-03-02
