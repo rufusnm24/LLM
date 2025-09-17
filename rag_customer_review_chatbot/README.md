@@ -26,6 +26,11 @@ rag_customer_review_chatbot/
 │   │   └── loader.py
 │   └── retriever/
 │       └── vectorstore.py
+├── tests/
+│   ├── conftest.py
+│   ├── test_chatbot.py
+│   ├── test_loader.py
+│   └── test_vectorstore.py
 ├── README.md
 └── requirements.txt
 ```
@@ -70,7 +75,20 @@ python -m rag_customer_review_chatbot.src.app.chatbot \
 
 The CLI loads the dataset, builds a TF-IDF vector index, and launches an interactive shell where you can ask questions about the reviews. Type `exit` or press `Ctrl+D` to quit.
 
+### 5. Run the automated checks
+
+Execute the project's unit tests to validate the ingestion, retrieval, and chatbot orchestration flows:
+
+```bash
+pytest rag_customer_review_chatbot/tests
+```
+
+Running the suite regularly is the fastest way to ensure production readiness when you adjust configurations or extend the code.
+
+### 6. Explore the notebook
+
 ### 5. Explore the notebook
+
 
 Open `notebooks/01_eda.ipynb` in JupyterLab or VS Code to explore the dataset, inspect rating distributions, and validate text quality before feeding it to the RAG pipeline.
 

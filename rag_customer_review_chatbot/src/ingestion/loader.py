@@ -6,7 +6,16 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 
+
+import logging
+
 import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+
+import pandas as pd
+
 
 
 @dataclass
@@ -53,6 +62,9 @@ def load_reviews(csv_path: Path | str, *, encoding: str = "utf-8") -> pd.DataFra
     if df.empty:
         raise ValueError("The review dataset is empty.")
 
+
+    logger.debug("Loaded %s reviews from %s", len(df), csv_path)
+
     return df
 
 
@@ -66,6 +78,11 @@ def preprocess_reviews(
 
     if text_column not in df.columns:
         raise KeyError(f"`{text_column}` column is required in the dataset.")
+
+
+    if min_text_length < 0:
+        raise ValueError("`min_text_length` must be non-negative.")
+
 
     cleaned = df.copy()
     cleaned[text_column] = (
@@ -81,6 +98,9 @@ def preprocess_reviews(
         raise ValueError(
             "No reviews remain after preprocessing. Lower `min_text_length` or inspect the dataset."
         )
+
+
+    logger.debug("Preprocessed reviews; %s remain after filtering", len(cleaned))
 
     return cleaned
 
@@ -99,6 +119,10 @@ def chunk_reviews(
 
     if chunk_size <= 0:
         raise ValueError("`chunk_size` must be positive.")
+
+    if chunk_overlap < 0:
+        raise ValueError("`chunk_overlap` must be non-negative.")
+
     if chunk_overlap >= chunk_size:
         raise ValueError("`chunk_overlap` must be smaller than `chunk_size`.")
 
@@ -115,6 +139,17 @@ def chunk_reviews(
         if not tokens:
             continue
 
+
+        review_id_value = row[review_id_column]
+        if pd.isna(review_id_value):
+            logger.debug("Skipping review with missing review_id value")
+            continue
+
+        review_id = str(review_id_value).strip()
+        if not review_id:
+            logger.debug("Skipping review with empty review_id column")
+            continue
+
         step = chunk_size - chunk_overlap
         chunk_index = 0
 
@@ -124,8 +159,13 @@ def chunk_reviews(
                 continue
 
             chunk_text = " ".join(chunk_tokens)
+
+            doc_id = f"{review_id}_{chunk_index}"
+            metadata: Dict[str, object] = {"review_id": review_id}
+
             doc_id = f"{row[review_id_column]}_{chunk_index}"
             metadata: Dict[str, object] = {"review_id": row[review_id_column]}
+
 
             if product_column and product_column in df.columns:
                 metadata["product_id"] = row[product_column]
@@ -144,6 +184,8 @@ def chunk_reviews(
     if not documents:
         raise ValueError("No chunks were produced from the dataset. Check preprocessing parameters.")
 
+
+    logger.debug("Generated %s document chunks", len(documents))
     return documents
 
 
@@ -183,5 +225,10 @@ def summarize_documents(documents: Iterable[ReviewDocument]) -> pd.DataFrame:
         row = {"doc_id": doc.doc_id, "text": doc.text}
         row.update(doc.metadata)
         rows.append(row)
+
+
+    summary = pd.DataFrame(rows)
+    logger.debug("Summarized %s documents into dataframe", len(summary))
+    return summary
 
     return pd.DataFrame(rows)
