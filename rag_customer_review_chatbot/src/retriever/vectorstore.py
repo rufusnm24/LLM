@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, List, Sequence, Tuple
 
+
 import logging
 
 import numpy as np
@@ -14,8 +15,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from rag_customer_review_chatbot.src.ingestion.loader import ReviewDocument
 
-logger = logging.getLogger(__name__)
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class RetrievalResult:
@@ -76,6 +77,11 @@ class SklearnVectorStore:
         if top_k == 0:
             return []
 
+
+        query_vec = self._vectorizer.transform([question])
+        similarities = cosine_similarity(query_vec, self._doc_matrix)[0]
+
+
         top_indices = np.argsort(similarities)[::-1][:top_k]
         results: List[RetrievalResult] = []
         for idx in top_indices:
@@ -93,6 +99,7 @@ def create_vector_store(
     min_df: int = 1,
 ) -> SklearnVectorStore:
     """Build and return a fitted `SklearnVectorStore`."""
+
 
     if min_df <= 0:
         raise ValueError("min_df must be a positive integer.")
@@ -128,3 +135,7 @@ def _validate_ngram_range(ngram_range: Sequence[int] | Tuple[int, int]) -> Tuple
     if start_int > end_int:
         raise ValueError("ngram_range start cannot exceed end.")
     return start_int, end_int
+    vectorizer = TfidfVectorizer(max_features=max_features, ngram_range=ngram_range, min_df=min_df)
+    store = SklearnVectorStore(vectorizer=vectorizer)
+    store.fit(list(documents))
+    return store

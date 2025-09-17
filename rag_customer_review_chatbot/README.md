@@ -87,6 +87,9 @@ Running the suite regularly is the fastest way to ensure production readiness wh
 
 ### 6. Explore the notebook
 
+### 5. Explore the notebook
+
+
 Open `notebooks/01_eda.ipynb` in JupyterLab or VS Code to explore the dataset, inspect rating distributions, and validate text quality before feeding it to the RAG pipeline.
 
 ## Configuration
