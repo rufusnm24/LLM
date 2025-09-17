@@ -1,0 +1,23 @@
+paths:
+  data_path: data/sample_reviews.csv
+
+ingestion:
+  text_column: review_text
+  rating_column: rating
+  product_column: product_id
+  review_id_column: review_id
+  min_text_length: 40
+  chunk_size: 220
+  chunk_overlap: 40
+
+retriever:
+  top_k: 3
+  vectorizer:
+    max_features: 3000
+    ngram_range: [1, 2]
+    min_df: 2
+
+chatbot:
+  max_context_reviews: 3
+  include_rating_summary: true
+  include_sentiment_hint: true
