@@ -1,0 +1,1 @@
+We are seeking a data analyst who can manage analytics projects, build SQL pipelines, and design Tableau dashboards. The role requires strong communication, automation mindset, and experience with Python, pandas, and workflow orchestration. Candidates should optimize reporting and collaborate with stakeholders to deliver insights.

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+tmp/
+artifacts/
+artifacts/jobs/
+Resume_Optimized.pdf
